@@ -1,0 +1,4 @@
+:root { font-family:'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN',sans-serif; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
+html { background:#f7f3ea; }
+body { margin:0; min-width:320px; min-height:100vh; }
+::selection { background:rgba(162,65,53,.18); }
