@@ -25,6 +25,25 @@ function splitGraphemes(text: string): string[] {
   return Array.from(text)
 }
 
+export function countVerticalCharacters(
+  input: string,
+  options: TategakiOptions = {},
+): number {
+  const prepared = prepareVerticalText(input, options)
+    .replace(/\n/g, '　')
+    .replace(/ /g, '　')
+  return splitGraphemes(prepared).length
+}
+
+export function calculateColumnHeight(
+  input: string,
+  columns: number,
+  options: TategakiOptions = {},
+): number {
+  const safeColumns = Math.max(1, Math.floor(columns))
+  return Math.max(1, Math.ceil(countVerticalCharacters(input, options) / safeColumns))
+}
+
 export function prepareVerticalText(
   input: string,
   { convertPunctuation = true, fullWidthAscii = true }: TategakiOptions = {},

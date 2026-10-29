@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatVerticalBlocks, formatVerticalText, prepareVerticalText } from './tategaki'
+import { calculateColumnHeight, formatVerticalBlocks, formatVerticalText, prepareVerticalText } from './tategaki'
 
 describe('prepareVerticalText', () => {
   it('converts punctuation to vertical presentation forms', () => {
@@ -16,6 +16,11 @@ describe('prepareVerticalText', () => {
 })
 
 describe('formatVerticalText', () => {
+  it('calculates height from text length and available text columns', () => {
+    expect(calculateColumnHeight('文'.repeat(190), 8)).toBe(24)
+    expect(calculateColumnHeight('文'.repeat(160), 8)).toBe(20)
+  })
+
   it('fills columns top-to-bottom and emits them right-to-left', () => {
     expect(formatVerticalText('abcdef', { charactersPerColumn: 3, convertPunctuation: false, fullWidthAscii: false })).toBe('d　a\ne　b\nf　c')
   })

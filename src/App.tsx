@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties, ReactNode } from 'react'
 import './App.css'
-import { formatVerticalBlocks, prepareVerticalText } from './lib/tategaki'
+import { calculateColumnHeight, formatVerticalText, prepareVerticalText } from './lib/tategaki'
 
 const SAMPLE_TEXT =
   '从前的日色变得慢，车、马、邮件都慢，一生只够爱一个人。\n\n从前的锁也好看，钥匙精美有样子，你锁了，人家就懂了。'
@@ -24,7 +24,6 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 function App() {
   const [text, setText] = useState(() => localStorage.getItem('tategaki:text:v2') || SAMPLE_TEXT)
-  const [charactersPerColumn, setCharactersPerColumn] = useState(20)
   const [messageWidth, setMessageWidth] = useState(15)
   const [blankColumn, setBlankColumn] = useState(true)
   const [fullWidthAscii, setFullWidthAscii] = useState(true)
@@ -33,9 +32,9 @@ function App() {
   const [convertPunctuation, setConvertPunctuation] = useState(true)
   const [activeView, setActiveView] = useState<'visual' | 'plain'>('plain')
   const [copied, setCopied] = useState(false)
-  const [copiedBlock, setCopiedBlock] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const columnsPerBlock = blankColumn ? (messageWidth + 1) / 2 : messageWidth
+  const charactersPerColumn = calculateColumnHeight(text, columnsPerBlock, { convertPunctuation, fullWidthAscii })
 
   useEffect(() => { localStorage.setItem('tategaki:text:v2', text) }, [text])
 
@@ -43,25 +42,17 @@ function App() {
     () => prepareVerticalText(text, { convertPunctuation, fullWidthAscii }),
     [text, convertPunctuation, fullWidthAscii],
   )
-  const textBlocks = useMemo(
-    () => formatVerticalBlocks(text, { charactersPerColumn, columnsPerBlock, blankColumn, convertPunctuation, fullWidthAscii }),
+  const plainText = useMemo(
+    () => formatVerticalText(text, { charactersPerColumn, columnsPerBlock, blankColumn, convertPunctuation, fullWidthAscii }),
     [text, charactersPerColumn, columnsPerBlock, blankColumn, convertPunctuation, fullWidthAscii],
   )
-  const plainText = textBlocks.join('\n\n')
   const characterCount = useMemo(() => Array.from(text.replace(/\s/g, '')).length, [text])
   const columnCount = Math.max(1, Math.ceil(prepareVerticalText(text).replace(/\n/g, '　').length / charactersPerColumn))
-  const blockCount = Math.max(1, Math.ceil(columnCount / columnsPerBlock))
 
   async function copyResult() {
     await navigator.clipboard.writeText(plainText)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1800)
-  }
-
-  async function copyOneBlock(block: string, index: number) {
-    await navigator.clipboard.writeText(block)
-    setCopiedBlock(index)
-    window.setTimeout(() => setCopiedBlock(null), 1800)
   }
 
   function downloadResult() {
@@ -124,8 +115,7 @@ function App() {
             <div className="settings-heading"><span className="step">02</span><h2>排版设置</h2></div>
             <div className="settings">
               <RangeSetting label="消息宽度" value={messageWidth} display={`${messageWidth} 格`} min={7} max={21} step={2} minLabel="窄" maxLabel="宽" onChange={setMessageWidth} />
-              <div className="setting-hint">当前为 {columnsPerBlock} 个文字列{blankColumn ? ` + ${columnsPerBlock - 1} 个空列` : ''}</div>
-              <RangeSetting label="每列高度" value={charactersPerColumn} display={`${charactersPerColumn} 字`} min={8} max={32} minLabel="短" maxLabel="长" onChange={setCharactersPerColumn} />
+              <div className="setting-hint">{columnsPerBlock} 个文字列{blankColumn ? ` + ${columnsPerBlock - 1} 个空列` : ''} · 自动 {charactersPerColumn} 行</div>
               <RangeSetting label="预览字号" value={fontSize} display={`${fontSize}px`} min={16} max={36} minLabel="小" maxLabel="大" onChange={setFontSize} />
               <RangeSetting label="预览列距" value={columnGap} display={`${columnGap.toFixed(2)}em`} min={0.8} max={1.8} step={0.05} minLabel="窄" maxLabel="宽" onChange={setColumnGap} />
               <ToggleSetting label="列间空一格" help="默认开启，关闭后各列紧贴" checked={blankColumn} onChange={setBlankColumn} />
@@ -144,7 +134,7 @@ function App() {
                 <button className={activeView === 'plain' ? 'active' : ''} onClick={() => setActiveView('plain')} role="tab" aria-selected={activeView === 'plain'}>微信 / X 文本</button>
                 <button className={activeView === 'visual' ? 'active' : ''} onClick={() => setActiveView('visual')} role="tab" aria-selected={activeView === 'visual'}>阅读预览</button>
               </div>
-              <span className="column-count">{columnCount} 列 · {blockCount} 块</span>
+              <span className="column-count">{columnCount} 个文字列 · {charactersPerColumn} 行</span>
             </div>
 
             <div className={`paper-stage ${activeView === 'plain' ? 'plain-stage' : ''}`}>
@@ -155,12 +145,10 @@ function App() {
                 </div>
               ) : (
                 <div className="plain-scroll">
-                  {textBlocks.map((block, index) => (
-                    <section className="social-block" key={`${index}-${block.slice(0, 8)}`}>
-                      <header><span>第 {index + 1} 块 / 共 {textBlocks.length} 块</span><button onClick={() => copyOneBlock(block, index)}><Icon name={copiedBlock === index ? 'check' : 'copy'} size={14} />{copiedBlock === index ? '已复制' : '复制此块'}</button></header>
-                      <pre>{block}</pre>
-                    </section>
-                  ))}
+                  <section className="social-block">
+                    <header><span>微信宽度 {messageWidth} 格</span><span>高度自动计算为 {charactersPerColumn} 行</span></header>
+                    <pre>{plainText}</pre>
+                  </section>
                 </div>
               ) : (
                 <div className="empty-state"><span>竖</span><p>在左侧输入文字<br />这里会生成可粘贴的竖排文本</p></div>
@@ -168,10 +156,10 @@ function App() {
             </div>
 
             <footer className="preview-footer">
-              <p>每块不超过 {messageWidth} 个全角字符宽，适配微信默认消息气泡。</p>
+              <p>固定为 {messageWidth} 格宽，高度随文字量自动增长。</p>
               <div>
                 <button className="secondary-button" onClick={downloadResult} disabled={!text}><Icon name="download" /> 保存 .txt</button>
-                <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? '已复制全部' : '复制全部（微信）'}</button>
+                <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? '已复制' : '复制微信文本'}</button>
               </div>
             </footer>
           </section>
