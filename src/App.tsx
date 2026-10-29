@@ -24,8 +24,8 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 function App() {
   const [text, setText] = useState(() => localStorage.getItem('tategaki:text:v2') || SAMPLE_TEXT)
-  const [charactersPerColumn, setCharactersPerColumn] = useState(15)
-  const [columnsPerBlock, setColumnsPerBlock] = useState(4)
+  const [charactersPerColumn, setCharactersPerColumn] = useState(20)
+  const [messageWidth, setMessageWidth] = useState(15)
   const [blankColumn, setBlankColumn] = useState(true)
   const [fullWidthAscii, setFullWidthAscii] = useState(true)
   const [fontSize, setFontSize] = useState(24)
@@ -35,6 +35,7 @@ function App() {
   const [copied, setCopied] = useState(false)
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const columnsPerBlock = blankColumn ? (messageWidth + 1) / 2 : messageWidth
 
   useEffect(() => { localStorage.setItem('tategaki:text:v2', text) }, [text])
 
@@ -122,8 +123,9 @@ function App() {
 
             <div className="settings-heading"><span className="step">02</span><h2>排版设置</h2></div>
             <div className="settings">
-              <RangeSetting label="每列字数" value={charactersPerColumn} display={String(charactersPerColumn)} min={8} max={25} minLabel="8" maxLabel="25" onChange={setCharactersPerColumn} />
-              <RangeSetting label="每块列数" value={columnsPerBlock} display={String(columnsPerBlock)} min={3} max={10} minLabel="适合 X" maxLabel="适合微信" onChange={setColumnsPerBlock} />
+              <RangeSetting label="消息宽度" value={messageWidth} display={`${messageWidth} 格`} min={7} max={21} step={2} minLabel="窄" maxLabel="宽" onChange={setMessageWidth} />
+              <div className="setting-hint">当前为 {columnsPerBlock} 个文字列{blankColumn ? ` + ${columnsPerBlock - 1} 个空列` : ''}</div>
+              <RangeSetting label="每列高度" value={charactersPerColumn} display={`${charactersPerColumn} 字`} min={8} max={32} minLabel="短" maxLabel="长" onChange={setCharactersPerColumn} />
               <RangeSetting label="预览字号" value={fontSize} display={`${fontSize}px`} min={16} max={36} minLabel="小" maxLabel="大" onChange={setFontSize} />
               <RangeSetting label="预览列距" value={columnGap} display={`${columnGap.toFixed(2)}em`} min={0.8} max={1.8} step={0.05} minLabel="窄" maxLabel="宽" onChange={setColumnGap} />
               <ToggleSetting label="列间空一格" help="默认开启，关闭后各列紧贴" checked={blankColumn} onChange={setBlankColumn} />
@@ -166,7 +168,7 @@ function App() {
             </div>
 
             <footer className="preview-footer">
-              <p>每块控制在手机宽度内，块与块之间自动空一行。</p>
+              <p>每块不超过 {messageWidth} 个全角字符宽，适配微信默认消息气泡。</p>
               <div>
                 <button className="secondary-button" onClick={downloadResult} disabled={!text}><Icon name="download" /> 保存 .txt</button>
                 <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? '已复制全部' : '复制全部（微信）'}</button>

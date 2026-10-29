@@ -40,11 +40,20 @@ describe('formatVerticalText', () => {
     )
   })
 
-  it('uses 15 rows and four columns per block by default for social apps', () => {
-    const blocks = formatVerticalBlocks('文'.repeat(61))
+  it('uses a 15-cell WeChat width by default', () => {
+    const blocks = formatVerticalBlocks('文'.repeat(161))
     expect(blocks).toHaveLength(2)
-    expect(blocks[0].split('\n')).toHaveLength(15)
-    expect(Array.from(blocks[0].split('\n')[0])).toHaveLength(7)
+    expect(blocks[0].split('\n')).toHaveLength(20)
+    expect(Array.from(blocks[0].split('\n')[0])).toHaveLength(15)
+  })
+
+  it('keeps the same 15-cell width when column gaps are disabled', () => {
+    const [block] = formatVerticalBlocks('文'.repeat(300), {
+      charactersPerColumn: 20,
+      columnsPerBlock: 15,
+      blankColumn: false,
+    })
+    expect(Array.from(block.split('\n')[0])).toHaveLength(15)
   })
 
   it('returns an empty result for empty input', () => {

@@ -37,6 +37,7 @@ textarea::placeholder { color:var(--faint); }
 .sample-button:hover { color:var(--red); }
 .settings-heading { margin:0 0 12px; }
 .settings { border-top:1px solid var(--line); }
+.setting-hint { margin:-6px 0 4px; padding:7px 9px; border-radius:3px; background:#f1ebe1; color:var(--muted); font-size:10px; text-align:center; }
 .range-setting { padding:17px 0 11px; display:block; border-bottom:1px solid #e7e1d7; }
 .range-setting>span { display:flex; align-items:center; justify-content:space-between; }
 .range-setting b, .toggle-setting b { font-size:12px; font-weight:500; }

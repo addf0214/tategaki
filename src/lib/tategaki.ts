@@ -50,9 +50,9 @@ export function formatVerticalText(
 export function formatVerticalBlocks(
   input: string,
   {
-    charactersPerColumn = 15,
+    charactersPerColumn = 20,
     convertPunctuation = true,
-    columnsPerBlock = 4,
+    columnsPerBlock = 8,
     blankColumn = true,
     fullWidthAscii = true,
   }: TategakiOptions = {},
