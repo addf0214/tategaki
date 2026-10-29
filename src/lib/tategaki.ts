@@ -71,7 +71,7 @@ export function formatVerticalBlocks(
   {
     charactersPerColumn = 20,
     convertPunctuation = true,
-    columnsPerBlock = 8,
+    columnsPerBlock = 7,
     blankColumn = true,
     fullWidthAscii = true,
   }: TategakiOptions = {},

@@ -45,11 +45,11 @@ describe('formatVerticalText', () => {
     )
   })
 
-  it('uses a 15-cell WeChat width by default', () => {
-    const blocks = formatVerticalBlocks('文'.repeat(161))
+  it('uses a 13-cell WeChat width by default', () => {
+    const blocks = formatVerticalBlocks('文'.repeat(141))
     expect(blocks).toHaveLength(2)
     expect(blocks[0].split('\n')).toHaveLength(20)
-    expect(Array.from(blocks[0].split('\n')[0])).toHaveLength(15)
+    expect(Array.from(blocks[0].split('\n')[0])).toHaveLength(13)
   })
 
   it('keeps the same 15-cell width when column gaps are disabled', () => {

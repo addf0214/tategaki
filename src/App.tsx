@@ -24,7 +24,7 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 function App() {
   const [text, setText] = useState(() => localStorage.getItem('tategaki:text:v2') || SAMPLE_TEXT)
-  const [messageWidth, setMessageWidth] = useState(15)
+  const [messageWidth, setMessageWidth] = useState(13)
   const [blankColumn, setBlankColumn] = useState(true)
   const [fullWidthAscii, setFullWidthAscii] = useState(true)
   const [fontSize, setFontSize] = useState(24)
@@ -90,7 +90,7 @@ function App() {
             <p className="eyebrow"><Icon name="sparkle" size={15} /> 为中文社交平台而做</p>
             <h1>让文字，<em>竖起来。</em></h1>
           </div>
-          <p className="intro-copy">从上到下，从右到左。长文自动切成手机宽度的小块，<br />复制后可直接粘贴到微信或 X。</p>
+          <p className="intro-copy">从上到下，从右到左。自动适配微信或 X 的显示宽度，<br />生成后可直接复制粘贴。</p>
         </section>
 
         <div className="workspace">
@@ -114,7 +114,11 @@ function App() {
 
             <div className="settings-heading"><span className="step">02</span><h2>排版设置</h2></div>
             <div className="settings">
-              <RangeSetting label="消息宽度" value={messageWidth} display={`${messageWidth} 格`} min={7} max={21} step={2} minLabel="窄" maxLabel="宽" onChange={setMessageWidth} />
+              <div className="platform-presets" aria-label="平台宽度预设">
+                <button className={messageWidth === 13 ? 'active' : ''} onClick={() => setMessageWidth(13)}>微信 <span>13 格</span></button>
+                <button className={messageWidth === 21 ? 'active' : ''} onClick={() => setMessageWidth(21)}>X <span>21 格</span></button>
+              </div>
+              <RangeSetting label="输出宽度" value={messageWidth} display={`${messageWidth} 格`} min={7} max={31} step={2} minLabel="7" maxLabel="31" onChange={setMessageWidth} />
               <div className="setting-hint">{columnsPerBlock} 个文字列{blankColumn ? ` + ${columnsPerBlock - 1} 个空列` : ''} · 自动 {charactersPerColumn} 行</div>
               <RangeSetting label="预览字号" value={fontSize} display={`${fontSize}px`} min={16} max={36} minLabel="小" maxLabel="大" onChange={setFontSize} />
               <RangeSetting label="预览列距" value={columnGap} display={`${columnGap.toFixed(2)}em`} min={0.8} max={1.8} step={0.05} minLabel="窄" maxLabel="宽" onChange={setColumnGap} />
@@ -146,7 +150,7 @@ function App() {
               ) : (
                 <div className="plain-scroll">
                   <section className="social-block">
-                    <header><span>微信宽度 {messageWidth} 格</span><span>高度自动计算为 {charactersPerColumn} 行</span></header>
+                    <header><span>{messageWidth === 13 ? '微信预设' : messageWidth === 21 ? 'X 预设' : '自定义'} · {messageWidth} 格宽</span><span>自动 {charactersPerColumn} 行</span></header>
                     <pre>{plainText}</pre>
                   </section>
                 </div>
@@ -156,10 +160,10 @@ function App() {
             </div>
 
             <footer className="preview-footer">
-              <p>固定为 {messageWidth} 格宽，高度随文字量自动增长。</p>
+              <p>{messageWidth === 13 ? '微信安全宽度' : messageWidth === 21 ? 'X 宽屏预设' : '自定义宽度'}，高度随文字量自动增长。</p>
               <div>
                 <button className="secondary-button" onClick={downloadResult} disabled={!text}><Icon name="download" /> 保存 .txt</button>
-                <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? '已复制' : '复制微信文本'}</button>
+                <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? '已复制' : messageWidth === 13 ? '复制微信文本' : messageWidth === 21 ? '复制 X 文本' : '复制结果'}</button>
               </div>
             </footer>
           </section>
