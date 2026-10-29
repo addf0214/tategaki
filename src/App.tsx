@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, ReactNode } from 'react'
+import type { ChangeEvent, CSSProperties, ReactNode } from 'react'
 import './App.css'
-import { formatVerticalText, prepareVerticalText } from './lib/tategaki'
+import { formatVerticalBlocks, prepareVerticalText } from './lib/tategaki'
 
 const SAMPLE_TEXT =
-  'たしかに、縦書きになると「ちゃんと読む意識」というものに、読み手側がちゃんと文章を読むということは、自動的に切り替わるかもしれないな、と思った。\n\nただ、インターネットできちんと文章を読むというのは、そもそも縦書きの文章という習慣がないといった可能性の方が高そうだな、などという本末転倒な可能性にも想いを馳せた。'
+  '从前的日色变得慢，车、马、邮件都慢，一生只够爱一个人。\n\n从前的锁也好看，钥匙精美有样子，你锁了，人家就懂了。'
 
 type IconName = 'copy' | 'download' | 'file' | 'rotate' | 'sparkle' | 'trash' | 'check'
 
@@ -23,27 +23,33 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 }
 
 function App() {
-  const [text, setText] = useState(() => localStorage.getItem('tategaki:text') || SAMPLE_TEXT)
-  const [charactersPerColumn, setCharactersPerColumn] = useState(20)
+  const [text, setText] = useState(() => localStorage.getItem('tategaki:text:v2') || SAMPLE_TEXT)
+  const [charactersPerColumn, setCharactersPerColumn] = useState(15)
+  const [columnsPerBlock, setColumnsPerBlock] = useState(4)
+  const [blankColumn, setBlankColumn] = useState(true)
+  const [fullWidthAscii, setFullWidthAscii] = useState(true)
   const [fontSize, setFontSize] = useState(24)
   const [columnGap, setColumnGap] = useState(1.15)
   const [convertPunctuation, setConvertPunctuation] = useState(true)
-  const [activeView, setActiveView] = useState<'visual' | 'plain'>('visual')
+  const [activeView, setActiveView] = useState<'visual' | 'plain'>('plain')
   const [copied, setCopied] = useState(false)
+  const [copiedBlock, setCopiedBlock] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { localStorage.setItem('tategaki:text', text) }, [text])
+  useEffect(() => { localStorage.setItem('tategaki:text:v2', text) }, [text])
 
   const verticalText = useMemo(
-    () => prepareVerticalText(text, { convertPunctuation }),
-    [text, convertPunctuation],
+    () => prepareVerticalText(text, { convertPunctuation, fullWidthAscii }),
+    [text, convertPunctuation, fullWidthAscii],
   )
-  const plainText = useMemo(
-    () => formatVerticalText(text, { charactersPerColumn, convertPunctuation }),
-    [text, charactersPerColumn, convertPunctuation],
+  const textBlocks = useMemo(
+    () => formatVerticalBlocks(text, { charactersPerColumn, columnsPerBlock, blankColumn, convertPunctuation, fullWidthAscii }),
+    [text, charactersPerColumn, columnsPerBlock, blankColumn, convertPunctuation, fullWidthAscii],
   )
+  const plainText = textBlocks.join('\n\n')
   const characterCount = useMemo(() => Array.from(text.replace(/\s/g, '')).length, [text])
   const columnCount = Math.max(1, Math.ceil(prepareVerticalText(text).replace(/\n/g, '　').length / charactersPerColumn))
+  const blockCount = Math.max(1, Math.ceil(columnCount / columnsPerBlock))
 
   async function copyResult() {
     await navigator.clipboard.writeText(plainText)
@@ -51,12 +57,18 @@ function App() {
     window.setTimeout(() => setCopied(false), 1800)
   }
 
+  async function copyOneBlock(block: string, index: number) {
+    await navigator.clipboard.writeText(block)
+    setCopiedBlock(index)
+    window.setTimeout(() => setCopiedBlock(null), 1800)
+  }
+
   function downloadResult() {
     const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `tategaki-${new Date().toISOString().slice(0, 10)}.txt`
+    anchor.download = `竖排文本-${new Date().toISOString().slice(0, 10)}.txt`
     anchor.click()
     URL.revokeObjectURL(url)
   }
@@ -73,48 +85,51 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <a className="brand" href="." aria-label="縦組工房 ホーム">
-          <span className="brand-seal">縦</span>
-          <span><strong>縦組工房</strong><small>TATEGAKI STUDIO</small></span>
+        <a className="brand" href="." aria-label="竖排工房首页">
+          <span className="brand-seal">竖</span>
+          <span><strong>竖排工房</strong><small>TATEGAKI STUDIO</small></span>
         </a>
-        <div className="topbar-note"><span className="status-dot" />文字はブラウザ内だけで処理されます</div>
+        <div className="topbar-note"><span className="status-dot" />文字仅在你的浏览器中处理</div>
       </header>
 
       <main>
         <section className="intro">
           <div>
-            <p className="eyebrow"><Icon name="sparkle" size={15} /> 日本語のための小さな道具</p>
-            <h1>文章を、<em>縦に読む。</em></h1>
+            <p className="eyebrow"><Icon name="sparkle" size={15} /> 为中文社交平台而做</p>
+            <h1>让文字，<em>竖起来。</em></h1>
           </div>
-          <p className="intro-copy">入力した文章を、右から左へ流れる美しい縦組みに。<br />設定を整えて、すぐにコピーできます。</p>
+          <p className="intro-copy">从上到下，从右到左。长文自动切成手机宽度的小块，<br />复制后可直接粘贴到微信或 X。</p>
         </section>
 
         <div className="workspace">
           <aside className="editor-panel">
             <div className="panel-heading">
-              <div><span className="step">01</span><h2>原文</h2></div>
+              <div><span className="step">01</span><h2>输入文字</h2></div>
               <div className="text-actions">
-                <button className="icon-button" onClick={() => fileInputRef.current?.click()} title="テキストファイルを開く"><Icon name="file" /></button>
-                <button className="icon-button" onClick={() => setText('')} title="原文を消去"><Icon name="trash" /></button>
+                <button className="icon-button" onClick={() => fileInputRef.current?.click()} title="打开文本文件"><Icon name="file" /></button>
+                <button className="icon-button" onClick={() => setText('')} title="清空文字"><Icon name="trash" /></button>
                 <input ref={fileInputRef} type="file" accept=".txt,text/plain" onChange={importFile} hidden />
               </div>
             </div>
 
             <div className="textarea-wrap">
-              <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="ここに文章を入力してください…" aria-label="縦書きにする原文" spellCheck={false} />
+              <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="在这里输入要竖排的文字……" aria-label="要竖排的原文" spellCheck={false} />
               <div className="textarea-footer">
-                <button className="sample-button" onClick={() => setText(SAMPLE_TEXT)}><Icon name="rotate" size={14} /> 例文を使う</button>
-                <span>{characterCount.toLocaleString()} 文字</span>
+                <button className="sample-button" onClick={() => setText(SAMPLE_TEXT)}><Icon name="rotate" size={14} /> 使用例文</button>
+                <span>{characterCount.toLocaleString()} 字</span>
               </div>
             </div>
 
-            <div className="settings-heading"><span className="step">02</span><h2>組版設定</h2></div>
+            <div className="settings-heading"><span className="step">02</span><h2>排版设置</h2></div>
             <div className="settings">
-              <RangeSetting label="一列の文字数" value={charactersPerColumn} display={String(charactersPerColumn)} min={8} max={32} minLabel="8" maxLabel="32" onChange={setCharactersPerColumn} />
-              <RangeSetting label="文字サイズ" value={fontSize} display={`${fontSize}px`} min={16} max={36} minLabel="小" maxLabel="大" onChange={setFontSize} />
-              <RangeSetting label="列の間隔" value={columnGap} display={`${columnGap.toFixed(2)}em`} min={0.8} max={1.8} step={0.05} minLabel="狭い" maxLabel="広い" onChange={setColumnGap} />
+              <RangeSetting label="每列字数" value={charactersPerColumn} display={String(charactersPerColumn)} min={8} max={25} minLabel="8" maxLabel="25" onChange={setCharactersPerColumn} />
+              <RangeSetting label="每块列数" value={columnsPerBlock} display={String(columnsPerBlock)} min={3} max={10} minLabel="适合 X" maxLabel="适合微信" onChange={setColumnsPerBlock} />
+              <RangeSetting label="预览字号" value={fontSize} display={`${fontSize}px`} min={16} max={36} minLabel="小" maxLabel="大" onChange={setFontSize} />
+              <RangeSetting label="预览列距" value={columnGap} display={`${columnGap.toFixed(2)}em`} min={0.8} max={1.8} step={0.05} minLabel="窄" maxLabel="宽" onChange={setColumnGap} />
+              <ToggleSetting label="列间空一格" help="默认开启，关闭后各列紧贴" checked={blankColumn} onChange={setBlankColumn} />
+              <ToggleSetting label="英文数字转全角" help="避免微信与 X 中半角字符错位" checked={fullWidthAscii} onChange={setFullWidthAscii} />
               <label className="toggle-setting">
-                <span><b>縦書き約物</b><small>句読点と括弧を縦向きに変換</small></span>
+                <span><b>转换竖排标点</b><small>支持中文引号、句号和括号</small></span>
                 <input type="checkbox" checked={convertPunctuation} onChange={(event) => setConvertPunctuation(event.target.checked)} />
                 <span className="toggle" aria-hidden="true" />
               </label>
@@ -123,11 +138,11 @@ function App() {
 
           <section className="preview-panel">
             <div className="preview-toolbar">
-              <div className="view-tabs" role="tablist" aria-label="表示方法">
-                <button className={activeView === 'visual' ? 'active' : ''} onClick={() => setActiveView('visual')} role="tab" aria-selected={activeView === 'visual'}>組版プレビュー</button>
-                <button className={activeView === 'plain' ? 'active' : ''} onClick={() => setActiveView('plain')} role="tab" aria-selected={activeView === 'plain'}>プレーンテキスト</button>
+              <div className="view-tabs" role="tablist" aria-label="预览方式">
+                <button className={activeView === 'plain' ? 'active' : ''} onClick={() => setActiveView('plain')} role="tab" aria-selected={activeView === 'plain'}>微信 / X 文本</button>
+                <button className={activeView === 'visual' ? 'active' : ''} onClick={() => setActiveView('visual')} role="tab" aria-selected={activeView === 'visual'}>阅读预览</button>
               </div>
-              <span className="column-count">全 {columnCount} 列</span>
+              <span className="column-count">{columnCount} 列 · {blockCount} 块</span>
             </div>
 
             <div className={`paper-stage ${activeView === 'plain' ? 'plain-stage' : ''}`}>
@@ -137,23 +152,30 @@ function App() {
                   <article className="vertical-text" style={{ fontSize: `${fontSize}px`, height: `${charactersPerColumn * fontSize * 1.5}px`, lineHeight: `${columnGap}` }}>{verticalText}</article>
                 </div>
               ) : (
-                <div className="plain-scroll"><pre>{plainText}</pre></div>
+                <div className="plain-scroll">
+                  {textBlocks.map((block, index) => (
+                    <section className="social-block" key={`${index}-${block.slice(0, 8)}`}>
+                      <header><span>第 {index + 1} 块 / 共 {textBlocks.length} 块</span><button onClick={() => copyOneBlock(block, index)}><Icon name={copiedBlock === index ? 'check' : 'copy'} size={14} />{copiedBlock === index ? '已复制' : '复制此块'}</button></header>
+                      <pre>{block}</pre>
+                    </section>
+                  ))}
+                </div>
               ) : (
-                <div className="empty-state"><span>縦</span><p>左側に文章を入力すると<br />ここに縦組みが現れます</p></div>
+                <div className="empty-state"><span>竖</span><p>在左侧输入文字<br />这里会生成可粘贴的竖排文本</p></div>
               )}
             </div>
 
             <footer className="preview-footer">
-              <p>現在の列数で生成し、コピー後も縦組みを保ちます。</p>
+              <p>每块控制在手机宽度内，块与块之间自动空一行。</p>
               <div>
-                <button className="secondary-button" onClick={downloadResult} disabled={!text}><Icon name="download" /> .txt 保存</button>
-                <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? 'コピーしました' : '結果をコピー'}</button>
+                <button className="secondary-button" onClick={downloadResult} disabled={!text}><Icon name="download" /> 保存 .txt</button>
+                <button className={`primary-button ${copied ? 'success' : ''}`} onClick={copyResult} disabled={!text}><Icon name={copied ? 'check' : 'copy'} /> {copied ? '已复制全部' : '复制全部（微信）'}</button>
               </div>
             </footer>
           </section>
         </div>
       </main>
-      <footer className="site-footer"><span>縦組工房</span><span>Made for quiet reading.</span></footer>
+      <footer className="site-footer"><span>竖排工房</span><span>Made for quiet reading.</span></footer>
     </div>
   )
 }
@@ -168,8 +190,18 @@ function RangeSetting({ label, value, display, min, max, step, minLabel, maxLabe
   return (
     <label className="range-setting">
       <span><b>{label}</b><output>{display}</output></span>
-      <input type="range" min={min} max={max} step={step} value={value} style={{ '--progress': `${progress}%` } as React.CSSProperties} onChange={(event) => onChange(Number(event.target.value))} />
+      <input type="range" min={min} max={max} step={step} value={value} style={{ '--progress': `${progress}%` } as CSSProperties} onChange={(event) => onChange(Number(event.target.value))} />
       <small><span>{minLabel}</span><span>{maxLabel}</span></small>
+    </label>
+  )
+}
+
+function ToggleSetting({ label, help, checked, onChange }: { label: string; help: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="toggle-setting">
+      <span><b>{label}</b><small>{help}</small></span>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <span className="toggle" aria-hidden="true" />
     </label>
   )
 }

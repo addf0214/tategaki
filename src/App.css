@@ -67,8 +67,12 @@ textarea::placeholder { color:var(--faint); }
 .visual-scroll, .plain-scroll { min-width:0; overflow:auto; scrollbar-color:#b8afa2 transparent; scrollbar-width:thin; }
 .visual-scroll { padding:34px 38px; direction:rtl; }
 .vertical-text { min-width:max-content; max-height:100%; margin-left:auto; writing-mode:vertical-rl; text-orientation:mixed; white-space:pre-wrap; overflow-wrap:anywhere; color:#25231f; font-family:'Noto Serif JP','Yu Mincho',serif; font-weight:500; letter-spacing:.08em; }
-.plain-scroll { padding:36px; direction:rtl; }
-.plain-scroll pre { width:max-content; min-width:100%; margin:0; direction:ltr; text-align:right; color:#302d28; font-family:'Noto Serif JP','Yu Mincho',serif; font-size:16px; line-height:1.65; }
+.plain-scroll { padding:36px; direction:ltr; display:flex; flex-direction:column; align-items:center; gap:24px; }
+.social-block { width:max-content; max-width:100%; border:1px solid #d8d0c3; border-radius:5px; background:#fff; box-shadow:0 4px 12px rgba(68,58,43,.07); overflow:hidden; }
+.social-block header { min-height:37px; padding:0 10px 0 14px; display:flex; align-items:center; justify-content:space-between; gap:24px; border-bottom:1px solid #e8e1d7; background:#faf7f1; color:var(--faint); font-size:10px; }
+.social-block header button { padding:5px 7px; display:flex; align-items:center; gap:4px; border:0; border-radius:3px; background:transparent; color:var(--red); font-size:10px; cursor:pointer; }
+.social-block header button:hover { background:#f0e8df; }
+.social-block pre { width:max-content; margin:0; padding:20px 24px; direction:ltr; text-align:right; color:#302d28; font-family:'Noto Sans CJK SC','PingFang SC','Microsoft YaHei',sans-serif; font-size:16px; line-height:1.65; }
 .empty-state { place-self:center; text-align:center; color:var(--faint); }
 .empty-state span { width:54px; height:54px; margin:0 auto 15px; display:grid; place-items:center; border:1px solid #c8bfb0; border-radius:50%; color:var(--red); font-family:'Noto Serif JP',serif; font-size:22px; }
 .empty-state p { font-size:12px; line-height:1.8; }
